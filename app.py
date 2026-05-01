@@ -43,12 +43,11 @@ if "current_A" not in st.session_state:
 if "current_B" not in st.session_state:
     st.session_state.current_B = None
 
+# rerun トリガー
 if "trigger_rerun" not in st.session_state:
     st.session_state.trigger_rerun = False
 
-# ---------------------------
-# rerun トリガー処理（関数外で実行）
-# ---------------------------
+# rerun は関数外でのみ実行（Cloud 安定化のため）
 if st.session_state.trigger_rerun:
     st.session_state.trigger_rerun = False
     st.experimental_rerun()
