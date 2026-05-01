@@ -65,7 +65,7 @@ if st.session_state.user_info is None:
             "start_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
 
-    # rerun しない
+    # フォーム送信後は rerun しない（Cloud で落ちるため）
     if st.session_state.user_info is None:
         st.stop()
 
@@ -77,6 +77,7 @@ if st.session_state.current_round < 10:
     round_num = st.session_state.current_round + 1
     st.title(f"カバン選択調査（{round_num} / 10）")
 
+    # A/B が未生成なら生成
     if st.session_state.current_A is None:
         A = generate_profile()
         B = generate_profile()
@@ -88,6 +89,7 @@ if st.session_state.current_round < 10:
     A = st.session_state.current_A
     B = st.session_state.current_B
 
+    # 表示順ランダム
     if random.random() < 0.5:
         left_label, left_profile = "A", A
         right_label, right_profile = "B", B
@@ -106,4 +108,8 @@ if st.session_state.current_round < 10:
     with col1:
         choose_left = show_profile(left_label, left_profile)
 
-    with
+    with col2:
+        choose_right = show_profile(right_label, right_profile)
+
+    # 回答処理（ここで rerun しても安全）
+    if choose_left or choose_right
