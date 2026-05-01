@@ -141,4 +141,38 @@ else:
     st.subheader("回答データ（10問分）")
     st.json(st.session_state.answers)
 
-    st.write("このまま Google Sheets や GitHub に保存する機能を追加できます。ご希望はありますか？")
+    st.write("このまま Googleimport gspread
+from google.oauth2.service_account import Credentials
+
+def save_to_google_sheets():
+    # 認証
+    creds = Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"],
+        scopes=["https://www.googleapis.com/auth/spreadsheets"]
+    )
+    client = gspread.authorize(creds)
+
+    # シートを開く
+    sheet = client.open_by_key(st.secrets["sheets"]["sheet_id"]).sheet1
+
+    # ヘッダー
+    header = ["round", "choice_label", "choice_profile", "A_profile", "B_profile", "timestamp"]
+
+    # ヘッダーが無ければ追加
+    if sheet.cell(1, 1).value != "round":
+        sheet.append_row(header)
+
+    # データ行を追加
+    for ans in st.session_state.answers:
+        sheet.append_row([
+            ans["round"],
+            ans["choice_label"],
+            str(ans["choice_profile"]),
+            str(ans["A_profile"]),
+            str(ans["B_profile"]),
+            ans["timestamp"]
+        ])
+
+    return True
+
+    
