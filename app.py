@@ -37,7 +37,7 @@ if "user_info" not in st.session_state:
 if "current_round" not in st.session_state:
     st.session_state["current_round"] = 0
 
-if "answers" not in st.session_state:
+if "answers" not in st.session_state or not isinstance(st.session_state["answers"], list):
     st.session_state["answers"] = []
 
 # ---------------------------
@@ -95,7 +95,11 @@ if st.session_state["current_round"] < 10:
         st.subheader(label)
         for key, val in profile.items():
             st.write(f"**{key}**：{val}")
-        return st.button(f"{label} を選ぶ")
+        # ★ ボタンIDをユニークにしてクラッシュ防止
+        return st.button(
+            f"{label} を選ぶ",
+            key=f"btn_{label}_{st.session_state['current_round']}"
+        )
 
     with col1:
         choose_left = show_profile(left_label, left_profile)
