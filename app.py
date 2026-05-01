@@ -43,6 +43,16 @@ if "current_A" not in st.session_state:
 if "current_B" not in st.session_state:
     st.session_state.current_B = None
 
+if "trigger_rerun" not in st.session_state:
+    st.session_state.trigger_rerun = False
+
+# ---------------------------
+# rerun トリガー処理（関数外で実行）
+# ---------------------------
+if st.session_state.trigger_rerun:
+    st.session_state.trigger_rerun = False
+    st.experimental_rerun()
+
 # ---------------------------
 # ① 被験者登録
 # ---------------------------
@@ -64,9 +74,9 @@ if st.session_state.user_info is None:
             "job": job,
             "start_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
+        st.session_state.trigger_rerun = True
 
-    if st.session_state.user_info is None:
-        st.stop()
+    st.stop()
 
 # ---------------------------
 # ② 10回の2択調査
@@ -108,7 +118,6 @@ if st.session_state.current_round < 10:
     with col2:
         choose_right = show_profile(right_label, right_profile)
 
-    # ★ ここが今回の SyntaxError の場所（修正済み）
     if choose_left or choose_right:
 
         choice_label = left_label if choose_left else right_label
@@ -127,7 +136,7 @@ if st.session_state.current_round < 10:
         st.session_state.current_A = None
         st.session_state.current_B = None
 
-        st.experimental_rerun()
+        st.session_state.trigger_rerun = True
 
     st.stop()
 
