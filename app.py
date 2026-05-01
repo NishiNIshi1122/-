@@ -2,6 +2,8 @@ import streamlit as st
 import random
 import uuid
 from datetime import datetime
+import gspread
+from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="カバン選択調査", layout="centered")
 
@@ -26,6 +28,36 @@ def generate_profile():
     }
 
 # ---------------------------
+# Google Sheets 保存関数
+# ---------------------------
+def save_to_google_sheets():
+    creds = Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"],
+        scopes=["https://www.googleapis.com/auth/spreadsheets"]
+    )
+    client = gspread.authorize(creds)
+    sheet = client.open_by_key(st.secrets["sheets"]["sheet_id"]).sheet1
+
+    header = ["round", "choice_label", "choice_profile", "A_profile", "B_profile", "timestamp"]
+
+    # ヘッダーが無ければ追加
+    if sheet.cell(1, 1).value != "round":
+        sheet.append_row(header)
+
+    # データ追加
+    for ans in st.session_state.answers:
+        sheet.append_row([
+            ans["round"],
+            ans["choice_label"],
+            str(ans["choice_profile"]),
+            str(ans["A_profile"]),
+            str(ans["B_profile"]),
+            ans["timestamp"]
+        ])
+
+    return True
+
+# ---------------------------
 # セッション初期化
 # ---------------------------
 if "user_info" not in st.session_state:
@@ -44,7 +76,7 @@ if "current_B" not in st.session_state:
     st.session_state.current_B = None
 
 # ---------------------------
-# ① 被験者登録（rerun なし）
+# ① 被験者登録
 # ---------------------------
 if st.session_state.user_info is None:
 
@@ -68,14 +100,13 @@ if st.session_state.user_info is None:
     st.stop()
 
 # ---------------------------
-# ② 10回の2択調査（rerun なし）
+# ② 10回の2択調査
 # ---------------------------
 if st.session_state.current_round < 10:
 
     round_num = st.session_state.current_round + 1
     st.title(f"カバン選択調査（{round_num} / 10）")
 
-    # A/B が未生成なら生成
     if st.session_state.current_A is None:
         A = generate_profile()
         B = generate_profile()
@@ -87,7 +118,6 @@ if st.session_state.current_round < 10:
     A = st.session_state.current_A
     B = st.session_state.current_B
 
-    # 表示順ランダム
     if random.random() < 0.5:
         left_label, left_profile = "A", A
         right_label, right_profile = "B", B
@@ -123,7 +153,6 @@ if st.session_state.current_round < 10:
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         })
 
-        # 次ラウンドへ
         st.session_state.current_round += 1
         st.session_state.current_A = None
         st.session_state.current_B = None
@@ -131,7 +160,7 @@ if st.session_state.current_round < 10:
     st.stop()
 
 # ---------------------------
-# ③ 完了画面（rerun なし）
+# ③ 完了画面
 # ---------------------------
 else:
     st.title("ご協力ありがとうございました！")
@@ -141,38 +170,9 @@ else:
     st.subheader("回答データ（10問分）")
     st.json(st.session_state.answers)
 
-    st.write("このまま Googleimport gspread
-from google.oauth2.service_account import Credentials
+    # ★ ここが SyntaxError の原因だった行（修正済み）
+    st.write("このまま Google Sheets や GitHub に保存する機能を追加できます。ご希望はありますか？")
 
-def save_to_google_sheets():
-    # 認証
-    creds = Credentials.from_service_account_info(
-        st.secrets["gcp_service_account"],
-        scopes=["https://www.googleapis.com/auth/spreadsheets"]
-    )
-    client = gspread.authorize(creds)
-
-    # シートを開く
-    sheet = client.open_by_key(st.secrets["sheets"]["sheet_id"]).sheet1
-
-    # ヘッダー
-    header = ["round", "choice_label", "choice_profile", "A_profile", "B_profile", "timestamp"]
-
-    # ヘッダーが無ければ追加
-    if sheet.cell(1, 1).value != "round":
-        sheet.append_row(header)
-
-    # データ行を追加
-    for ans in st.session_state.answers:
-        sheet.append_row([
-            ans["round"],
-            ans["choice_label"],
-            str(ans["choice_profile"]),
-            str(ans["A_profile"]),
-            str(ans["B_profile"]),
-            ans["timestamp"]
-        ])
-
-    return True
-
-    
+    if st.button("Google Sheets に保存する"):
+        if save_to_google_sheets():
+            st.success("Google Sheets に保存しました！")
