@@ -1,10 +1,3 @@
-streamlit
-gspread
-google-auth
-google-auth-oauthlib
-google-auth-httplib2
-
-
 import streamlit as st
 import random
 import uuid
