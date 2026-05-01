@@ -168,7 +168,7 @@ else:
     st.subheader("回答データ（10問分）")
     st.json(st.session_state.answers)
 
-    st.write("このまま Google Sheets や GitHub に保存する機能を追加できます。ご希望はありますか？")
+    st.write("Google Sheets に保存できます。")
 
     if st.button("Google Sheets に保存する"):
         if save_to_google_sheets():
