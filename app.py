@@ -43,17 +43,8 @@ if "current_A" not in st.session_state:
 if "current_B" not in st.session_state:
     st.session_state.current_B = None
 
-# rerun トリガー
-if "trigger_rerun" not in st.session_state:
-    st.session_state.trigger_rerun = False
-
-# rerun は関数外でのみ実行（Cloud 安定化のため）
-if st.session_state.trigger_rerun:
-    st.session_state.trigger_rerun = False
-    st.experimental_rerun()
-
 # ---------------------------
-# ① 被験者登録
+# ① 被験者登録（rerun しない）
 # ---------------------------
 if st.session_state.user_info is None:
 
@@ -73,12 +64,13 @@ if st.session_state.user_info is None:
             "job": job,
             "start_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
-        st.session_state.trigger_rerun = True
 
-    st.stop()
+    # rerun しない
+    if st.session_state.user_info is None:
+        st.stop()
 
 # ---------------------------
-# ② 10回の2択調査
+# ② 10回の2択調査（rerun するのはここだけ）
 # ---------------------------
 if st.session_state.current_round < 10:
 
@@ -135,7 +127,7 @@ if st.session_state.current_round < 10:
         st.session_state.current_A = None
         st.session_state.current_B = None
 
-        st.session_state.trigger_rerun = True
+        st.experimental_rerun()
 
     st.stop()
 
