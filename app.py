@@ -176,3 +176,8 @@ else:
     if st.button("Google Sheets に保存する"):
         if save_to_google_sheets():
             st.success("Google Sheets に保存しました！")
+streamlit
+gspread
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
