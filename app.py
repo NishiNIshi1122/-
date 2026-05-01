@@ -37,7 +37,6 @@ if "current_round" not in st.session_state:
 if "answers" not in st.session_state:
     st.session_state.answers = []
 
-# A/B プロファイル保持
 if "current_A" not in st.session_state:
     st.session_state.current_A = None
 
@@ -65,9 +64,10 @@ if st.session_state.user_info is None:
             "job": job,
             "start_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
-        st.experimental_rerun()
 
-    st.stop()
+    # rerun しない
+    if st.session_state.user_info is None:
+        st.stop()
 
 # ---------------------------
 # ② 10回の2択調査
@@ -77,7 +77,6 @@ if st.session_state.current_round < 10:
     round_num = st.session_state.current_round + 1
     st.title(f"カバン選択調査（{round_num} / 10）")
 
-    # A/B が未生成なら生成
     if st.session_state.current_A is None:
         A = generate_profile()
         B = generate_profile()
@@ -89,7 +88,6 @@ if st.session_state.current_round < 10:
     A = st.session_state.current_A
     B = st.session_state.current_B
 
-    # 表示順ランダム
     if random.random() < 0.5:
         left_label, left_profile = "A", A
         right_label, right_profile = "B", B
@@ -108,42 +106,4 @@ if st.session_state.current_round < 10:
     with col1:
         choose_left = show_profile(left_label, left_profile)
 
-    with col2:
-        choose_right = show_profile(right_label, right_profile)
-
-    # ★ rerun を関数内で呼ばない
-    if choose_left or choose_right:
-
-        choice_label = left_label if choose_left else right_label
-        choice_profile = left_profile if choose_left else right_profile
-
-        st.session_state.answers.append({
-            "round": round_num,
-            "choice_label": choice_label,
-            "choice_profile": choice_profile,
-            "A_profile": A,
-            "B_profile": B,
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        })
-
-        # 次ラウンド準備
-        st.session_state.current_round += 1
-        st.session_state.current_A = None
-        st.session_state.current_B = None
-
-        st.experimental_rerun()
-
-    st.stop()
-
-# ---------------------------
-# ③ 完了画面
-# ---------------------------
-else:
-    st.title("ご協力ありがとうございました！")
-    st.subheader("被験者情報")
-    st.json(st.session_state.user_info)
-
-    st.subheader("回答データ（10問分）")
-    st.json(st.session_state.answers)
-
-    st.write("このまま Google Sheets や GitHub に保存する機能を追加できます。ご希望はありますか？")
+    with
