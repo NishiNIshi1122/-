@@ -28,32 +28,55 @@ def generate_profile():
     }
 
 # ---------------------------
-# Google Sheets 保存関数
+# Google Sheets 保存関数（改良版）
 # ---------------------------
 def save_to_google_sheets():
-    creds = Credentials.from_service_account_info(
-        st.secrets["gcp_service_account"],
-        scopes=["https://www.googleapis.com/auth/spreadsheets"]
-    )
-    client = gspread.authorize(creds)
-    sheet = client.open_by_key(st.secrets["sheets"]["sheet_id"]).sheet1
 
-    header = ["round", "choice_label", "choice_profile", "A_profile", "B_profile", "timestamp"]
+    try:
+        creds = Credentials.from_service_account_info(
+            st.secrets["gcp_service_account"],
+            scopes=["https://www.googleapis.com/auth/spreadsheets"]
+        )
 
-    if sheet.cell(1, 1).value != "round":
-        sheet.append_row(header)
+        client = gspread.authorize(creds)
+        sheet = client.open_by_key(
+            st.secrets["sheets"]["sheet_id"]
+        ).sheet1
 
-    for ans in st.session_state.answers:
-        sheet.append_row([
-            ans["round"],
-            ans["choice_label"],
-            str(ans["choice_profile"]),
-            str(ans["A_profile"]),
-            str(ans["B_profile"]),
-            ans["timestamp"]
-        ])
+        header = [
+            "user_id", "age", "gender", "job",
+            "round", "choice_label",
+            "choice_profile", "A_profile", "B_profile",
+            "timestamp"
+        ]
 
-    return True
+        # ヘッダーなければ追加
+        if not sheet.get_all_values():
+            sheet.append_row(header)
+
+        rows = []
+        for ans in st.session_state.answers:
+            rows.append([
+                st.session_state.user_info["id"],
+                st.session_state.user_info["age"],
+                st.session_state.user_info["gender"],
+                st.session_state.user_info["job"],
+                ans["round"],
+                ans["choice_label"],
+                str(ans["choice_profile"]),
+                str(ans["A_profile"]),
+                str(ans["B_profile"]),
+                ans["timestamp"]
+            ])
+
+        sheet.append_rows(rows)
+
+        return True
+
+    except Exception as e:
+        st.error(f"保存エラー: {e}")
+        return False
+
 
 # ---------------------------
 # セッション初期化
@@ -87,6 +110,10 @@ if st.session_state.user_info is None:
         submitted = st.form_submit_button("登録して調査を開始する")
 
     if submitted:
+        if job.strip() == "":
+            st.warning("職業を入力してください")
+            st.stop()
+
         st.session_state.user_info = {
             "id": str(uuid.uuid4()),
             "age": age,
@@ -94,6 +121,8 @@ if st.session_state.user_info is None:
             "job": job,
             "start_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
+
+        st.rerun()
 
     st.stop()
 
@@ -105,18 +134,25 @@ if st.session_state.current_round < 10:
     round_num = st.session_state.current_round + 1
     st.title(f"カバン選択調査（{round_num} / 10）")
 
+    # 初回だけ生成
     if st.session_state.current_A is None:
         A = generate_profile()
         B = generate_profile()
+
         while A == B:
             B = generate_profile()
+
         st.session_state.current_A = A
         st.session_state.current_B = B
 
     A = st.session_state.current_A
     B = st.session_state.current_B
 
-    if random.random() < 0.5:
+    # 左右ランダム固定
+    if "order" not in st.session_state:
+        st.session_state.order = random.choice([0, 1])
+
+    if st.session_state.order == 0:
         left_label, left_profile = "A", A
         right_label, right_profile = "B", B
     else:
@@ -129,7 +165,7 @@ if st.session_state.current_round < 10:
         st.subheader(label)
         for key, val in profile.items():
             st.write(f"**{key}**：{val}")
-        return st.button(f"{label} を選ぶ", key=f"btn_{label}_{round_num}")
+        return st.button(f"{label} を選ぶ", key=f"{label}_{round_num}")
 
     with col1:
         choose_left = show_profile(left_label, left_profile)
@@ -151,9 +187,13 @@ if st.session_state.current_round < 10:
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         })
 
+        # リセット
         st.session_state.current_round += 1
         st.session_state.current_A = None
         st.session_state.current_B = None
+        st.session_state.order = None
+
+        st.rerun()
 
     st.stop()
 
@@ -162,13 +202,12 @@ if st.session_state.current_round < 10:
 # ---------------------------
 else:
     st.title("ご協力ありがとうございました！")
+
     st.subheader("被験者情報")
     st.json(st.session_state.user_info)
 
     st.subheader("回答データ（10問分）")
     st.json(st.session_state.answers)
-
-    st.write("Google Sheets に保存できます。")
 
     if st.button("Google Sheets に保存する"):
         if save_to_google_sheets():
